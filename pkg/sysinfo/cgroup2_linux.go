@@ -2,6 +2,7 @@ package sysinfo // import "github.com/docker/docker/pkg/sysinfo"
 
 import (
 	"io/ioutil"
+	"os"
 	"path"
 	"strings"
 
@@ -66,15 +67,20 @@ func newV2(quiet bool, opts *opts) *SysInfo {
 	return sysInfo
 }
 
-func applyMemoryCgroupInfoV2(info *SysInfo, controllers map[string]struct{}, _ string) []string {
+func applyMemoryCgroupInfoV2(info *SysInfo, controllers map[string]struct{}, dirPath string) []string {
 	var warnings []string
 	if _, ok := controllers["memory"]; !ok {
 		warnings = append(warnings, "Unable to find memory controller")
 		return warnings
 	}
 
-	info.MemoryLimit = true
 	info.SwapLimit = true
+	_, err := os.Stat(path.Join(dirPath, "memory.swap.max"))
+	if err != nil {
+		info.SwapLimit = false
+	}
+
+	info.MemoryLimit = true
 	info.MemoryReservation = true
 	info.OomKillDisable = false
 	info.MemorySwappiness = false
